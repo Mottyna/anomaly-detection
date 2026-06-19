@@ -6,7 +6,9 @@ from sklearn.metrics import roc_auc_score, roc_curve
 import torch.nn.functional as F
 import torchvision.transforms.functional as TF
 import numpy as np
-from parameters import RETURN_NODES, THRESHOLD
+from parameters import RETURN_NODES, THRESHOLD, MEAN, STD
+import matplotlib.pyplot as plt
+import os
 
 def train(teacher, student, train_loader, epochs, learning_rate, T, device):
     student_extractor = create_feature_extractor(student, return_nodes=RETURN_NODES)
@@ -75,7 +77,7 @@ def test(teacher, student, test_loader, device):
 
     print("\n--- Avvio Fase di Test ---")
     with torch.no_grad():
-        for inputs, targets in test_loader:
+        for batch_idx, (inputs, targets) in enumerate(test_loader):
             targets = targets.to(device)
             inputs = inputs.to(device)
             
@@ -131,6 +133,13 @@ def test(teacher, student, test_loader, device):
             # se lo score supera la soglia è ANOMALA
             predictions = torch.where(img_anomaly_scores > THRESHOLD, 0, 1)
 
+            save_anomaly_visualizations(images=inputs, 
+                                        anomaly_maps=smoothed_map, # smoothed_map per una visualizzazione pulita senza rumore
+                                        targets=targets, 
+                                        predictions=predictions, 
+                                        batch_idx=batch_idx,
+                                        save_dir="risultati")
+
             # accuratezza
             correct_predictions += (predictions == targets).sum().item()
             total_samples += targets.size(0)
@@ -160,3 +169,48 @@ def test(teacher, student, test_loader, device):
     print(f"Soglia ottimale calcolata: {optimal_threshold:.6f}")
 
     return accuracy, all_anomaly_scores, all_targets
+
+
+def save_anomaly_visualizations(images, anomaly_maps, targets, predictions, batch_idx, save_dir="results"):
+    """
+    """
+    os.makedirs(save_dir, exist_ok=True)
+
+    batch_size = images.shape[0]
+    
+    for i in range(batch_size):
+        # ripristina l'immagine originale
+        img = images[i].cpu().numpy().transpose(1, 2, 0)
+        img = (img * STD) + MEAN
+        img = np.clip(img, 0, 1)  # Forza i valori nel range [0, 1]
+        
+        # prepara l'anomaly map
+        amap = anomaly_maps[i].cpu().numpy().squeeze() # rimuove la dimensione del canale (1, H, W) -> (H, W)
+        
+        # normalizzazione locale della mappa per renderla più visibile (range 0-1)
+        if amap.max() - amap.min() > 0:
+            amap_normalized = (amap - amap.min()) / (amap.max() - amap.min())
+        else:
+            amap_normalized = amap
+
+        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+        
+        # pannello 1: originale
+        axes[0].imshow(img)
+        axes[0].set_title(f"Originale (Target: {targets[i].item()})")
+        axes[0].axis('off')
+        
+        # pannello 2: Anomaly Map
+        axes[1].imshow(amap_normalized, cmap='jet')
+        axes[1].set_title("Anomaly Map (Heatmap)")
+        axes[1].axis('off')
+        
+        # pannello 3: overlay
+        axes[2].imshow(img)
+        axes[2].imshow(amap_normalized, cmap='jet', alpha=0.5) # alpha controlla la trasparenza
+        axes[2].set_title(f"Predizione: {'Anomalo' if predictions[i].item() == 0 else 'Normale'}")
+        axes[2].axis('off')
+
+        img_id = batch_idx * batch_size + i
+        plt.savefig(f"{save_dir}/anomaly_sample_{img_id}.png", bbox_inches='tight', dpi=150)
+        plt.close() # chiude la figura per liberare memoria RAM

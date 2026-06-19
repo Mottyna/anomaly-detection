@@ -9,7 +9,7 @@ from teacher import Teacher
 from actions import train, test
 import random
 import numpy as np
-from parameters import RETURN_NODES, THRESHOLD, SEED
+from parameters import RETURN_NODES, THRESHOLD, SEED, MEAN, STD
 
 dataset_name = sys.argv[1].strip()
 
@@ -33,7 +33,7 @@ transform = transforms.Compose([
     transforms.ToTensor(),
     transforms.RandomHorizontalFlip(),
     transforms.RandomVerticalFlip(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    transforms.Normalize(mean=MEAN, std=STD)
 ])
 
 data_train = mvtec.MVTEC(root='./mvtec',
