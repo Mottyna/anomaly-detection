@@ -1,35 +1,71 @@
 from torchvision.models import resnet50, ResNet50_Weights
 from torchvision import datasets, transforms
+from torch.utils.data import DataLoader
 import torch
-from anomalib.data import MVTecAD
+import mvtec
 import os
 import sys
 from teacher import Teacher
-from actions import train
+from actions import train, test
+import random
+import numpy as np
+from parameters import RETURN_NODES, THRESHOLD, SEED
 
 dataset_name = sys.argv[1].strip()
 
 if torch.cuda.is_available():
     device = torch.device("cuda")
+    torch.cuda.manual_seed(SEED)
 else:
     device = torch.device("cpu")
 print(f"Using device: {device}")
 
-# TODO: scrivere caricamento dati custom
-# caricamento dataset
-datamodule = MVTecAD(
-    root=f"./datasets/{dataset_name}",
-    category=f"{dataset_name}"
-)
+random.seed(SEED)
+np.random.seed(SEED)
+torch.manual_seed(SEED)
 
-train_loader = datamodule.train_dataloader()
-test_loader = datamodule.test_dataloader()
+# caricamento dataset
+transform = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+])
+
+data_train = mvtec.MVTEC(root='./mvtec',
+                    train=True,
+                    transform=transform,
+                    target_transform=None,
+                    resize=224,
+                    interpolation=3,
+                    category=dataset_name)
+
+data_test = mvtec.MVTEC(root='./mvtec',
+                    train=False,
+                    transform=transform,
+                    target_transform=None,
+                    resize=224,
+                    interpolation=3,
+                    category=dataset_name)
+
+train_loader = DataLoader(dataset=data_train, batch_size=20, shuffle=True)
+test_loader = DataLoader(dataset=data_test, batch_size=20, shuffle=False)
 
 teacher = Teacher(model="resnet")
 
 # provo come prima cosa lo stesso modello senza pesi
 student = resnet50(weights=None)
 
-train(teacher=teacher.model, student=student, train_loader=train_loader, epochs=10, learning_rate=0.001, T=2, soft_target_loss_weight=0.25, ce_loss_weight=0.75, device=device)
+trained_student = train(teacher=teacher.model, 
+                    student=student, 
+                    train_loader=train_loader, 
+                    epochs=60, 
+                    learning_rate=0.001, 
+                    T=2, 
+                    device=device)
 
+accuracy, scores, targets = test(teacher=teacher.model, 
+                            student=trained_student, 
+                            test_loader=test_loader, 
+                            device=device)
+
+#TODO: creare maschere binarie
 #TODO: test con mie maschere binarie vs ground truth
