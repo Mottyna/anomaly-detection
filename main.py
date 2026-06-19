@@ -23,10 +23,16 @@ print(f"Using device: {device}")
 random.seed(SEED)
 np.random.seed(SEED)
 torch.manual_seed(SEED)
+torch.backends.cudnn.deterministic = True
+
+g = torch.Generator()
+g.manual_seed(SEED)
 
 # caricamento dataset
 transform = transforms.Compose([
     transforms.ToTensor(),
+    transforms.RandomHorizontalFlip(),
+    transforms.RandomVerticalFlip(),
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ])
 
@@ -46,7 +52,7 @@ data_test = mvtec.MVTEC(root='./mvtec',
                     interpolation=3,
                     category=dataset_name)
 
-train_loader = DataLoader(dataset=data_train, batch_size=20, shuffle=True)
+train_loader = DataLoader(dataset=data_train, batch_size=20, shuffle=True, generator=g)
 test_loader = DataLoader(dataset=data_test, batch_size=20, shuffle=False)
 
 teacher = Teacher(model="resnet")
@@ -57,7 +63,7 @@ student = resnet50(weights=None)
 trained_student = train(teacher=teacher.model, 
                     student=student, 
                     train_loader=train_loader, 
-                    epochs=60, 
+                    epochs=100, 
                     learning_rate=0.001, 
                     T=2, 
                     device=device)

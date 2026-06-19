@@ -4,6 +4,7 @@ import torch.optim as optim
 from torchvision.models.feature_extraction import create_feature_extractor
 from sklearn.metrics import roc_auc_score, roc_curve
 import torch.nn.functional as F
+import torchvision.transforms.functional as TF
 import numpy as np
 from parameters import RETURN_NODES, THRESHOLD
 
@@ -16,7 +17,7 @@ def train(teacher, student, train_loader, epochs, learning_rate, T, device):
     teacher = teacher.to(device)
     student_extractor = student_extractor.to(device)
 
-    criterion = nn.MSELoss()
+    # criterion = nn.MSELoss()
     optimizer = optim.Adam(student_extractor.parameters(), lr=learning_rate, weight_decay=1e-5)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
 
@@ -44,7 +45,10 @@ def train(teacher, student, train_loader, epochs, learning_rate, T, device):
                 t_feat_norm = F.normalize(t_feat, p=2, dim=1)
                 s_feat_norm = F.normalize(s_feat, p=2, dim=1)
 
-                loss += criterion(s_feat_norm, t_feat_norm)
+                cos_sim = F.cosine_similarity(s_feat, t_feat, dim=1)
+                loss += (1 - cos_sim).mean()
+
+                #loss += criterion(s_feat_norm, t_feat_norm)
 
             loss.backward()
             optimizer.step()
@@ -87,14 +91,41 @@ def test(teacher, student, test_loader, device):
                 s_feat = F.normalize(s_outs[key], p=2, dim=1)
 
                 # anomaly map locale
-                layer_map = torch.mean((t_feat - s_feat) ** 2, dim=1, keepdim=True)
+                # layer_map = torch.mean((t_feat - s_feat) ** 2, dim=1, keepdim=True)
+
+                cos_sim = F.cosine_similarity(t_feat, s_feat, dim=1).unsqueeze(1)
+                layer_map = 1 - cos_sim
 
                 # resize
                 layer_map_resized = F.interpolate(layer_map, size=(h, w), mode='bilinear', align_corners=False)
                 global_anomaly_map += layer_map_resized
 
-            img_anomaly_scores = torch.mean(global_anomaly_map, dim=[1, 2, 3])
 
+            # kernel_size=9 e sigma=4.0 sono lo standard per MVTec a 224x224
+            smoothed_map = TF.gaussian_blur(global_anomaly_map, kernel_size=[5,5], sigma=[1.0, 1.0])
+
+            # mappa pulita dal rimore, prendo pixel peggiore
+            flat_smoothed_map = smoothed_map.view(batch_size, -1)
+
+            k = max(1, int(flat_smoothed_map.shape[1] * 0.01))
+            topk_scores, _ = torch.topk(flat_smoothed_map, k, dim=1)
+            
+            # media di quest'area critica
+            img_anomaly_scores = torch.mean(topk_scores, dim=1)
+            # img_anomaly_scores, _ = torch.max(flat_smoothed_map, dim=1)
+
+            """
+            # top-K pooling
+            flat_anomaly_map = global_anomaly_map.view(batch_size, -1)
+            # 2% dell'immagine
+            k = max(1, int(flat_anomaly_map.shape[1] * 0.02))
+            # uso i k pixel con errore maggiore
+            topk_scores, _ = torch.topk(flat_anomaly_map, k, dim=1)
+            
+            # lo score diventa la media dei pixel peggiori, in questo modo la dimensione della parte anomala non influisce sulla decisione
+            img_anomaly_scores = torch.mean(topk_scores, dim=1)
+            """
+            # img_anomaly_scores = torch.mean(global_anomaly_map, dim=[1, 2, 3])
             # img_anomaly_scores, _ = torch.max(anomaly_map_resized.view(inputs.size(0), -1), dim=1)
 
             # se lo score supera la soglia è ANOMALA
