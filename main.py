@@ -24,6 +24,7 @@ random.seed(SEED)
 np.random.seed(SEED)
 torch.manual_seed(SEED)
 torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
 
 g = torch.Generator()
 g.manual_seed(SEED)
@@ -33,6 +34,11 @@ transform = transforms.Compose([
     transforms.ToTensor(),
     transforms.RandomHorizontalFlip(),
     transforms.RandomVerticalFlip(),
+    transforms.Normalize(mean=MEAN, std=STD)
+])
+
+test_transform = transforms.Compose([
+    transforms.ToTensor(),
     transforms.Normalize(mean=MEAN, std=STD)
 ])
 
@@ -46,7 +52,7 @@ data_train = mvtec.MVTEC(root='./mvtec',
 
 data_test = mvtec.MVTEC(root='./mvtec',
                     train=False,
-                    transform=transform,
+                    transform=test_transform,
                     target_transform=None,
                     resize=224,
                     interpolation=3,

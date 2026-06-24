@@ -2,5 +2,4 @@ venv
 __pycache__
 mvtec/bottle
 mvtec/leather
-mvtec.py
 risultati

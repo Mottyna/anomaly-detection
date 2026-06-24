@@ -75,10 +75,14 @@ def test(teacher, student, test_loader, device):
     all_anomaly_scores = []
     all_targets = []
 
+    all_pixel_scores = []
+    all_pixel_targets = []
+
     print("\n--- Avvio Fase di Test ---")
     with torch.no_grad():
-        for batch_idx, (inputs, targets) in enumerate(test_loader):
+        for batch_idx, (inputs, masks, targets) in enumerate(test_loader):
             targets = targets.to(device)
+            masks = masks.to(device)
             inputs = inputs.to(device)
             
             t_outs = teacher(inputs)
@@ -133,7 +137,8 @@ def test(teacher, student, test_loader, device):
             # se lo score supera la soglia è ANOMALA
             predictions = torch.where(img_anomaly_scores > THRESHOLD, 0, 1)
 
-            save_anomaly_visualizations(images=inputs, 
+            save_anomaly_visualizations(images=inputs,
+                                        masks=masks,
                                         anomaly_maps=smoothed_map, # smoothed_map per una visualizzazione pulita senza rumore
                                         targets=targets, 
                                         predictions=predictions, 
@@ -147,31 +152,40 @@ def test(teacher, student, test_loader, device):
             all_anomaly_scores.extend(img_anomaly_scores.cpu().numpy())
             all_targets.extend(targets.cpu().numpy())
 
+            all_pixel_scores.extend(smoothed_map.cpu().numpy().flatten())
+            all_pixel_targets.extend((masks > 0.5).cpu().numpy().astype(np.int32).flatten())
+
+
             print(f"Anomaly Scores: {img_anomaly_scores.tolist()}")
             print(f"Predizioni: {predictions.tolist()}")
             print(f"Target reali: {targets.tolist()}")
     
 
     accuracy = (correct_predictions / total_samples) * 100
-    print(f"Test completato. Accuratezza Globale: {accuracy:.2f}% ({correct_predictions}/{total_samples})")
+    print(f"Test completato. Accuratezza globale: {accuracy:.2f}% ({correct_predictions}/{total_samples})")
     targets_np = np.array(all_targets)
     scores_np = np.array(all_anomaly_scores)
+    pixel_targets_np = np.array(all_pixel_targets)
+    pixel_scores_np = np.array(all_pixel_scores)
     
     anomalia_come_classe_positiva = 1 - targets_np 
     
     auc_score = roc_auc_score(anomalia_come_classe_positiva, scores_np)
-    print(f"ROC-AUC Score Globale: {auc_score * 100:.2f}%")
+    print(f"ROC-AUC score globale (image level): {auc_score * 100:.2f}%")
+
+    pixel_auc_score = roc_auc_score(pixel_targets_np, pixel_scores_np)
+    print(f"ROC-AUC score locale (pixel level): {pixel_auc_score * 100:.2f}%")
 
     # calcolo automatico della soglia ottimale (Youden)
     fpr, tpr, thresholds = roc_curve(anomalia_come_classe_positiva, scores_np)
     best_idx = np.argmax(tpr - fpr)
     optimal_threshold = thresholds[best_idx]
-    print(f"Soglia ottimale calcolata: {optimal_threshold:.6f}")
+    print(f"Soglia ottimale calcolata (Younden): {optimal_threshold:.6f}")
 
     return accuracy, all_anomaly_scores, all_targets
 
 
-def save_anomaly_visualizations(images, anomaly_maps, targets, predictions, batch_idx, save_dir="results"):
+def save_anomaly_visualizations(images, masks, anomaly_maps, targets, predictions, batch_idx, save_dir="results"):
     """
     """
     os.makedirs(save_dir, exist_ok=True)
@@ -184,6 +198,8 @@ def save_anomaly_visualizations(images, anomaly_maps, targets, predictions, batc
         img = (img * STD) + MEAN
         img = np.clip(img, 0, 1)  # Forza i valori nel range [0, 1]
         
+        gt_mask = masks[i].cpu().numpy().squeeze()
+
         # prepara l'anomaly map
         amap = anomaly_maps[i].cpu().numpy().squeeze() # rimuove la dimensione del canale (1, H, W) -> (H, W)
         
@@ -199,16 +215,15 @@ def save_anomaly_visualizations(images, anomaly_maps, targets, predictions, batc
         axes[0].imshow(img)
         axes[0].set_title(f"Originale (Target: {targets[i].item()})")
         axes[0].axis('off')
-        
-        # pannello 2: Anomaly Map
-        axes[1].imshow(amap_normalized, cmap='jet')
-        axes[1].set_title("Anomaly Map (Heatmap)")
+
+        # pannello 2: ground truth
+        axes[1].imshow(gt_mask, cmap='gray')
+        axes[1].set_title("Ground Truth (Maschera Reale)")
         axes[1].axis('off')
         
-        # pannello 3: overlay
-        axes[2].imshow(img)
-        axes[2].imshow(amap_normalized, cmap='jet', alpha=0.5) # alpha controlla la trasparenza
-        axes[2].set_title(f"Predizione: {'Anomalo' if predictions[i].item() == 0 else 'Normale'}")
+        # pannello 2: Anomaly Map
+        axes[2].imshow(amap_normalized, cmap='jet')
+        axes[2].set_title(f"Anomaly Map (Heatmap), predizione: {'Normale' if targets[i].item() == 1 else 'Anomalo'}")
         axes[2].axis('off')
 
         img_id = batch_idx * batch_size + i
