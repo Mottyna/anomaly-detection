@@ -1,15 +1,16 @@
-from torchvision.models import resnet50, ResNet50_Weights
+from torchvision.models import resnet50, ResNet50_Weights, resnet18
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
+from torchvision.models.feature_extraction import create_feature_extractor
 import torch
 import mvtec
 import os
 import sys
-from teacher import Teacher
+from classes import Teacher, ProjectorWrapper, ReverseDistillationStudent
 from actions import train, test
 import random
 import numpy as np
-from parameters import RETURN_NODES, THRESHOLD, SEED, MEAN, STD
+from parameters import RETURN_NODES, THRESHOLD_RESNET50, THRESHOLD_RESNET18, THRESHOLD_RD4AD, SEED, MEAN, STD
 
 dataset_name = sys.argv[1].strip()
 
@@ -63,21 +64,45 @@ test_loader = DataLoader(dataset=data_test, batch_size=20, shuffle=False)
 
 teacher = Teacher(model="resnet")
 
-# provo come prima cosa lo stesso modello senza pesi
-student = resnet50(weights=None)
+student_model = sys.argv[2].strip()
+
+if student_model == "resnet50":
+    # stesso modello senza pesi
+    student_50 = resnet50(weights=None)
+    student_extractor = create_feature_extractor(student_50, return_nodes=RETURN_NODES)
+    threshold = THRESHOLD_RESNET50
+    reverse_distillation = False
+elif student_model == "resnet18":
+    # modello piu' leggero
+    student_18 = resnet18(weights=None)
+    student_layers = create_feature_extractor(student_18, return_nodes=RETURN_NODES)
+    student_extractor = ProjectorWrapper(student_layers).to(device)
+    threshold = THRESHOLD_RESNET18
+    reverse_distillation = False
+elif student_model == "rd4ad":
+    student_extractor = ReverseDistillationStudent().to(device)
+    threshold = THRESHOLD_RD4AD
+    reverse_distillation = True
+else:
+    print("Errore negli argomenti del programma!")
+    exit(1)
 
 trained_student = train(teacher=teacher.model, 
-                    student=student, 
+                    student=student_extractor, 
                     train_loader=train_loader, 
                     epochs=100, 
                     learning_rate=0.001, 
                     T=2, 
-                    device=device)
+                    device=device,
+                    reverse_distillation=reverse_distillation)
 
 accuracy, scores, targets = test(teacher=teacher.model, 
                             student=trained_student, 
                             test_loader=test_loader, 
-                            device=device)
+                            device=device,
+                            threshold=threshold,
+                            reverse_distillation=reverse_distillation)
 
-#TODO: creare maschere binarie
-#TODO: test con mie maschere binarie vs ground truth
+exit(0)
+
+#TODO: testare tanti student diversi e magari RD4AD

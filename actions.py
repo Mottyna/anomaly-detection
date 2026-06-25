@@ -1,26 +1,24 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torchvision.models.feature_extraction import create_feature_extractor
 from sklearn.metrics import roc_auc_score, roc_curve
 import torch.nn.functional as F
 import torchvision.transforms.functional as TF
 import numpy as np
-from parameters import RETURN_NODES, THRESHOLD, MEAN, STD
+from parameters import RETURN_NODES, MEAN, STD
 import matplotlib.pyplot as plt
 import os
 
-def train(teacher, student, train_loader, epochs, learning_rate, T, device):
-    student_extractor = create_feature_extractor(student, return_nodes=RETURN_NODES)
+def train(teacher, student, train_loader, epochs, learning_rate, T, device, reverse_distillation=False):
 
     teacher.eval()
-    student_extractor.train()
+    student.train()
 
     teacher = teacher.to(device)
-    student_extractor = student_extractor.to(device)
+    student = student.to(device)
 
     # criterion = nn.MSELoss()
-    optimizer = optim.Adam(student_extractor.parameters(), lr=learning_rate, weight_decay=1e-5)
+    optimizer = optim.Adam(student.parameters(), lr=learning_rate, weight_decay=1e-5)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
 
     print(f"\n--- Inizio Addestramento ({epochs} Epoche) ---")
@@ -35,7 +33,10 @@ def train(teacher, student, train_loader, epochs, learning_rate, T, device):
                 teacher_outputs = teacher(inputs)
 
             # forward pass con student
-            student_outputs = student_extractor(inputs)
+            if not reverse_distillation:
+                student_outputs = student(inputs)
+            else:
+                student_outputs = student(teacher_outputs)
 
             # calcolo della loss tra le mappe di feature nei diversi layers
             loss = 0.0
@@ -60,10 +61,10 @@ def train(teacher, student, train_loader, epochs, learning_rate, T, device):
         scheduler.step()    # aggiorno il learning rate
         print(f"Epoch {epoch+1}/{epochs}, Loss: {running_loss / len(train_loader)}")
 
-    return student_extractor
+    return student
 
 
-def test(teacher, student, test_loader, device):
+def test(teacher, student, test_loader, device, threshold, reverse_distillation=False):
     """
     """
     teacher.eval()
@@ -86,7 +87,11 @@ def test(teacher, student, test_loader, device):
             inputs = inputs.to(device)
             
             t_outs = teacher(inputs)
-            s_outs = student(inputs)
+
+            if not reverse_distillation:
+                s_outs = student(inputs)
+            else:
+                s_outs = student(t_outs)
             
             batch_size, _, h, w = inputs.shape
 
@@ -108,17 +113,18 @@ def test(teacher, student, test_loader, device):
 
 
             # kernel_size=9 e sigma=4.0 sono lo standard per MVTec a 224x224
-            smoothed_map = TF.gaussian_blur(global_anomaly_map, kernel_size=[5,5], sigma=[1.0, 1.0])
+            # smoothed_map = TF.gaussian_blur(global_anomaly_map, kernel_size=[5,5], sigma=[1.0, 1.0])
+            smoothed_map = TF.gaussian_blur(global_anomaly_map, kernel_size=[9,9], sigma=[4.0, 4.0])
 
-            # mappa pulita dal rimore, prendo pixel peggiore
+            # mappa pulita dal rumore
             flat_smoothed_map = smoothed_map.view(batch_size, -1)
 
-            k = max(1, int(flat_smoothed_map.shape[1] * 0.01))
+            # era 0.01 prima
+            k = max(1, int(flat_smoothed_map.shape[1] * 0.001))
             topk_scores, _ = torch.topk(flat_smoothed_map, k, dim=1)
             
             # media di quest'area critica
             img_anomaly_scores = torch.mean(topk_scores, dim=1)
-            # img_anomaly_scores, _ = torch.max(flat_smoothed_map, dim=1)
 
             """
             # top-K pooling
@@ -135,7 +141,7 @@ def test(teacher, student, test_loader, device):
             # img_anomaly_scores, _ = torch.max(anomaly_map_resized.view(inputs.size(0), -1), dim=1)
 
             # se lo score supera la soglia è ANOMALA
-            predictions = torch.where(img_anomaly_scores > THRESHOLD, 0, 1)
+            predictions = torch.where(img_anomaly_scores > threshold, 0, 1)
 
             save_anomaly_visualizations(images=inputs,
                                         masks=masks,
