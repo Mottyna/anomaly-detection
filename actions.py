@@ -5,7 +5,7 @@ from sklearn.metrics import roc_auc_score, roc_curve
 import torch.nn.functional as F
 import torchvision.transforms.functional as TF
 import numpy as np
-from parameters import RETURN_NODES, MEAN, STD
+from parameters import RETURN_NODES, MEAN, STD, WEIGHTS
 import matplotlib.pyplot as plt
 import os
 
@@ -109,18 +109,21 @@ def test(teacher, student, test_loader, device, threshold, reverse_distillation=
 
                 # resize
                 layer_map_resized = F.interpolate(layer_map, size=(h, w), mode='bilinear', align_corners=False)
-                global_anomaly_map += layer_map_resized
+                if not reverse_distillation:
+                    global_anomaly_map += layer_map_resized
+                else:
+                    # somma pesate dei layers
+                    global_anomaly_map += layer_map_resized*WEIGHTS[key]
 
 
             # kernel_size=9 e sigma=4.0 sono lo standard per MVTec a 224x224
-            # smoothed_map = TF.gaussian_blur(global_anomaly_map, kernel_size=[5,5], sigma=[1.0, 1.0])
-            smoothed_map = TF.gaussian_blur(global_anomaly_map, kernel_size=[9,9], sigma=[4.0, 4.0])
+            smoothed_map = TF.gaussian_blur(global_anomaly_map, kernel_size=[5,5], sigma=[1.0, 1.0])
 
             # mappa pulita dal rumore
             flat_smoothed_map = smoothed_map.view(batch_size, -1)
 
             # era 0.01 prima
-            k = max(1, int(flat_smoothed_map.shape[1] * 0.001))
+            k = max(1, int(flat_smoothed_map.shape[1] * 0.005))
             topk_scores, _ = torch.topk(flat_smoothed_map, k, dim=1)
             
             # media di quest'area critica
