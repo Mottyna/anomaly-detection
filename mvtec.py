@@ -128,7 +128,7 @@ class MVTEC(VisionDataset):
                                 mask = mask[:, :, 0]
                             self.masks.append(mask)
                         else:
-                            # Fallback di sicurezza in caso di file mancanti
+                            # fallback di sicurezza in caso di file mancanti ma abbastanza inutile
                             h, w = img.shape[0], img.shape[1]
                             mask = np.zeros((h, w), dtype=np.uint8)
                             self.masks.append(mask)
