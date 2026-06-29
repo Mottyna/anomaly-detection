@@ -1,5 +1,14 @@
-# This is a modified version of mvtec dataloader by https://github.com/b3r8:
-# https://github.com/b3r8/mvtec-dataloader/mvtec.py
+# ===================================================================================
+# MIT License
+# 
+# Copyright (c) b3r8 (https://github.com/b3r8)
+# 
+# This file is a modified version of the MVTec Dataloader from:
+# https://github.com/b3r8/mvtec-dataloader
+# 
+# Changes made:
+# - Added ground truth (GT) mask extraction and return values during the test phase.
+# ===================================================================================
 
 # Ho aggiunto la restituzione della ground truth nei dati test
 
