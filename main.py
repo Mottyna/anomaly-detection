@@ -44,6 +44,7 @@ transform = transforms.Compose([
     # transforms.RandomHorizontalFlip(),    # per textures
     # transforms.RandomVerticalFlip(),
     transforms.ColorJitter(brightness=0.1, contrast=0.1),   # per le bottiglie porca miseria
+    transforms.RandomRotation(degrees=(0, 360)),    # sempre le dannate bottiglie
     transforms.Normalize(mean=MEAN, std=STD)
 ])
 
@@ -117,7 +118,7 @@ else:
 trained_student = train(teacher=teacher.model, 
                     student=student_extractor, 
                     train_loader=train_loader, 
-                    epochs=100, 
+                    epochs=100, # overfitting per rd4ad?
                     learning_rate=0.001, 
                     T=2, 
                     device=device,

@@ -49,7 +49,8 @@ def train(teacher, student, train_loader, epochs, learning_rate, T, device, reve
                 t_feat_norm = F.normalize(t_feat, p=2, dim=1)
                 s_feat_norm = F.normalize(s_feat, p=2, dim=1)
 
-                cos_sim = F.cosine_similarity(s_feat, t_feat, dim=1)
+                # COSINE SIMILARITY
+                cos_sim = F.cosine_similarity(s_feat_norm, t_feat_norm, dim=1)
                 if not reverse_distillation:
                     loss += (1 - cos_sim).mean()
                 else:
@@ -254,7 +255,7 @@ def save_anomaly_visualizations(images, masks, anomaly_maps, targets, prediction
         
         # pannello 2: Anomaly Map
         axes[2].imshow(amap_normalized, cmap='jet')
-        axes[2].set_title(f"Anomaly Map (Heatmap), predizione: {'Normale' if targets[i].item() == 1 else 'Anomalo'}")
+        axes[2].set_title(f"Anomaly Map (Heatmap), predizione: {'Normale' if predictions[i].item() == 1 else 'Anomalo'}")
         axes[2].axis('off')
 
         img_id = batch_idx * batch_size + i
@@ -306,8 +307,8 @@ def generate_synthetic_anomalies(inputs):
             
         else:
             # ALPHA BLENDING NOISE / COLOR (macchie sfocate / aloni)
-            # trasparenza casuale tra il 15% e il 40%
-            alpha = torch.rand(1).item() * 0.25 + 0.15 
+            # trasparenza casuale tra il 10% e il 35%
+            alpha = torch.rand(1).item() * 0.25 + 0.10 
             
             if torch.rand(1).item() > 0.5:
                 # alone di colore

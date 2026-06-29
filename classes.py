@@ -53,10 +53,10 @@ class ResidualBlock(nn.Module):
     """
     def __init__(self, channels):
         super().__init__()
-        self.conv1 = nn.Conv2d(channels, channels, kernel_size=3, padding=1, bias=False)
+        self.conv1 = nn.Conv2d(channels, channels, kernel_size=3, padding=1, bias=False, padding_mode='reflect')
         self.bn1 = nn.BatchNorm2d(channels)
         self.relu = nn.ReLU(inplace=True)
-        self.conv2 = nn.Conv2d(channels, channels, kernel_size=3, padding=1, bias=False)
+        self.conv2 = nn.Conv2d(channels, channels, kernel_size=3, padding=1, bias=False, padding_mode='reflect')
         self.bn2 = nn.BatchNorm2d(channels)
 
     def forward(self, x):
@@ -130,10 +130,10 @@ class ReverseDistillationStudent(nn.Module):
 
     def _make_decoder_block(self, in_channels, out_channels):
         return nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1, bias=False),
+            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1, bias=False, padding_mode='reflect'),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True),
-            nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1, bias=False),
+            nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1, bias=False, padding_mode='reflect'),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True)
         )
