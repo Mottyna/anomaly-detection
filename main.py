@@ -15,7 +15,7 @@ from parameters import RETURN_NODES, SEED, MEAN, STD
 from benchmark import benchmark_epochs
 
 
-def distilla(dataset_name, teacher_model_name, student_model_name, train_loader, val_loader, test_loader, benchmark_mode=False, max_epochs=100, n_checkpoints=5):
+def anomaly_detection(dataset_name, teacher_model_name, student_model_name, train_loader, val_loader, test_loader, benchmark_mode=False, max_epochs=100, n_checkpoints=5):
     # INIZIALIZZAZIONE DEVICE
     if torch.cuda.is_available():
         device = torch.device("cuda")
@@ -183,7 +183,7 @@ if __name__ == "__main__":
 
     test_loader = DataLoader(dataset=data_test, batch_size=20, shuffle=False)
 
-    _,_,_ = distilla(dataset_name, teacher_model_name, student_model_name, train_loader, val_loader, test_loader, benchmark_mode)
+    _,_,_ = anomaly_detection(dataset_name, teacher_model_name, student_model_name, train_loader, val_loader, test_loader, benchmark_mode)
 
     exit(0)
 

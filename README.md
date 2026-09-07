@@ -21,13 +21,16 @@ Lo scopo del progetto era implementare e testare con vari modelli la tecnica di 
 ## Struttura del progetto
 
 ```text
-├── main.py          # Entry point del programma (gestione argomenti, loader e pipeline)
-├── classes.py       # Definizione delle reti (Teacher, Projector, RD4AD Student)
-├── actions.py       # Funzioni core: train, test, calibrazione soglia e generazione anomalie sintetiche
-├── mvtec.py         # Dataloader per la gestione dei flussi di Train e Test/GT
-├── parameters.py    # Costanti, seed, iperparametri e pesi dei layer
-├── risultati/       # [Generata automaticamente] Cartella contenente i plot di output del test
-└── mvtec/           # Cartella che deve contenere i database mvtec sui quali si vuole testare il programma
+├── main.py                 # Definizione della funzione `anomaly_detection`, che addestra e testa la coppia teacher-student nel task di anomaly detection
+├── classes.py              # Definizione delle reti (Teacher, Projector, RD4AD Student)
+├── actions.py              # Funzioni core: train, test, calibrazione soglia e generazione anomalie sintetiche
+├── mvtec.py                # Dataloader per la gestione dei flussi di Train e Test/GT
+├── parameters.py           # Costanti, seed, iperparametri e pesi dei layer
+├── benchmark.py            # Definizione della funzione `benchmark_epochs`, che addestra lo student fornendo dei checkpoints con risultati intermedi
+├── run_benchmark.py        # Benchmark di tutte le reti come student e teacher, con checkpoints a diversi livelli di addestramento
+├── risultati/              # [Generata automaticamente] Cartella contenente i plot di output del test
+├── mvtec/                  # Cartella che deve contenere i database mvtec sui quali si vuole testare il programma
+└── risultati_benchmark/    # [Generata automaticamente] Cartella contenente i risultati dei benchmark eseguiti
 ```
 
 
@@ -57,9 +60,22 @@ Scarica il dataset MVTec AD e posizionalo all'interno di una cartella chiamata m
 
 
 ## Come utilizzare il progetto
-Il file `main.py` accetta tre argomenti posizionali da riga di comando:
+### Anomaly detection / Benchmark di una sola coppia teacher-student alla volta
+Il file `main.py` accetta da tre a quattro argomenti posizionali da riga di comando, a seconda della modalita' desiderata:
 ```
 python3 main.py <categoria_dataset> <modello_teacher> <modello_student>
+python3 main.py <categoria_dataset> <modello_teacher> <modello_student> -b
+python3 main.py <categoria_dataset> <modello_teacher> <modello_student> --benchmark
+
+```
+La presenza di `-b` o `--benchmark` indica la scelta della modalità benchmark, che comporta la presenza di checkpoints durante la fase di training.
+
+Per testare tutti i modelli automaticamente utilizzare il file `run_benchmark.py`!
+
+### Benchmark totale
+Il file `run_benchmark.py` accetta fino a tre argomenti posizionali:
+```
+python3 run_benchmark.py <categoria_dataset> <max_epoche> <n_checkpoints>
 ```
 
 ### Esempi di esecuzione:
@@ -70,6 +86,10 @@ python3 main.py bottle wideresnet50 rd4ad
 Esegui con distillazione standard su "carpet":
 ```
 python3 main.py carpet resnet50 resnet18
+```
+Esegui benchmark su bottle, con massime epoche 150 e 15 checkpoints:
+```
+python3 run_benchmark.py bottle 150 15
 ```
 
 
@@ -86,7 +106,8 @@ Per evitare che la dimensione fisica del difetto influenzi eccessivamente lo sco
 
 
 ## Output
-Al termine della fase di test, all'interno della cartella `risultati/` verranno salvate immagini di confronto nominate `anomaly_sample_[ID].png`. Ogni immagine contiene:
+### Modalita' standard (main.py)
+Al termine della fase di test (solo se eseguito in modalita' standard), all'interno della cartella `risultati/` verranno salvate immagini di confronto nominate `anomaly_sample_[ID].png`. Ogni immagine contiene:
 * **Originale**: L'immagine di input denormalizzata con il target reale.
 * **Ground Truth**: La maschera binaria reale del difetto.
 * **Anomaly Map (Heatmap)**: La mappa di calore generata dal modello (in scala di colori jet), affiancata dalla predizione finale del sistema (Normale o Anomalo).
@@ -99,9 +120,19 @@ Sul terminale verrano stampate le metriche di valutazione:
 - recall
 - threshold ottimale calcolato a posteriori (*non* quello usato per calcolare le metriche)
 
+### Modalita' benchmark (main.py)
+Sul terminale verrano stampate le metriche di valutazione a ogni checkpoint dell'addestramento:
+- ROC-AUC (globale e a livello di pixel)
+- PR-AUC
+- F1 score
+- precision
+- recall
+- threshold ottimale calcolato a posteriori (*non* quello usato per calcolare le metriche)
+
+### Benchmark (run_benchmark.py)
+Nella cartella `risultati_benchmark` verranno salvati un file `.csv` contenente i migliori risultati ottenuti da ogni coppia teacher-student testata e altre metriche, e un file `.json` che rappresenta l'andamento dell'addestramento.
 
 ## Crediti
-
 Questo progetto include e adatta codice open-source di terze parti:
 
 * **MVTec Dataloader (`mvtec.py`):** Adattato dal repository originale di [@b3r8](https://github.com/b3r8) ([b3r8/mvtec-dataloader](https://github.com/b3r8/mvtec-dataloader)), rilasciato sotto licenza **MIT**. Il file originale è stato modificato per integrare e restituire le maschere di Ground Truth (GT) necessarie per la valutazione a livello di pixel.
