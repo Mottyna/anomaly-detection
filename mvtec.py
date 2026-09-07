@@ -1,7 +1,7 @@
 # ===================================================================================
 # MIT License
 # 
-# Copyright (c) b3r8 (https://github.com/b3r8)
+# Copyright (c) Bernardo (https://github.com/b3r8)
 # 
 # This file is a modified version of the MVTec Dataloader from:
 # https://github.com/b3r8/mvtec-dataloader

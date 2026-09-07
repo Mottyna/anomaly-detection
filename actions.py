@@ -6,23 +6,34 @@ from sklearn.metrics import roc_auc_score, roc_curve, precision_recall_curve, au
 import torch.nn.functional as F
 import torchvision.transforms.functional as TF
 import numpy as np
-from parameters import RETURN_NODES, MEAN, STD, WEIGHTS
 import matplotlib.pyplot as plt
 import os
+import time
 
-def train(teacher, student, train_loader, epochs, learning_rate, T, device, reverse_distillation=False):
+from parameters import RETURN_NODES, MEAN, STD, WEIGHTS
 
+
+def train(teacher, student, train_loader, epochs, learning_rate, T, device, reverse_distillation=False, optimizer=None, scheduler=None):
+    """
+    addestramento del modello student.
+    """
     teacher.eval()
     student.train()
 
     teacher = teacher.to(device)
     student = student.to(device)
 
-    # criterion = nn.MSELoss()
-    optimizer = optim.Adam(student.parameters(), lr=learning_rate, weight_decay=1e-5)
-    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
+    if optimizer is None:
+        optimizer = optim.Adam(student.parameters(), lr=learning_rate, weight_decay=1e-5)
+    
+    if scheduler is None:
+        scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
 
     print(f"\n--- Inizio Addestramento ({epochs} Epoche) ---")
+    if device.type == 'cuda':
+        torch.cuda.synchronize()
+    start_train_time = time.perf_counter()
+
     for epoch in range(epochs):
         running_loss = 0.0
         for inputs, _ in train_loader:
@@ -45,6 +56,10 @@ def train(teacher, student, train_loader, epochs, learning_rate, T, device, reve
                 t_feat = teacher_outputs[key]
                 s_feat = student_outputs[key]
 
+                # se non hanno la stessa risoluzione
+                if s_feat.shape[2:] != t_feat.shape[2:]:
+                    s_feat = F.interpolate(s_feat, size=t_feat.shape[2:], mode='bilinear', align_corners=False)
+
                 # normalizzato
                 t_feat_norm = F.normalize(t_feat, p=2, dim=1)
                 s_feat_norm = F.normalize(s_feat, p=2, dim=1)
@@ -66,11 +81,16 @@ def train(teacher, student, train_loader, epochs, learning_rate, T, device, reve
         scheduler.step()    # aggiorno il learning rate
         print(f"[TRAIN] Epoch {epoch+1}/{epochs}, Loss: {running_loss / len(train_loader)}")
 
-    return student
+    if device.type == 'cuda':
+        torch.cuda.synchronize()
+    total_train_time = time.perf_counter() - start_train_time
+
+    return student, total_train_time
 
 
-def test(teacher, student, test_loader, device, threshold, reverse_distillation=False):
+def test(teacher, student, test_loader, device, threshold, reverse_distillation=False, save_vis=True):
     """
+    valutazione del modello.
     """
     teacher.eval()
     student.eval()
@@ -85,6 +105,10 @@ def test(teacher, student, test_loader, device, threshold, reverse_distillation=
     all_pixel_targets = []
 
     print("\n--- Avvio fase di test ---")
+    if device.type == 'cuda':
+        torch.cuda.synchronize()
+    start_inf_time = time.perf_counter()
+
     with torch.no_grad():
         for batch_idx, (inputs, masks, targets) in enumerate(test_loader):
             targets = targets.to(device)
@@ -105,6 +129,10 @@ def test(teacher, student, test_loader, device, threshold, reverse_distillation=
             for key in RETURN_NODES.values():
                 t_feat = F.normalize(t_outs[key], p=2, dim=1)
                 s_feat = F.normalize(s_outs[key], p=2, dim=1)
+
+                # se non hanno la stessa risoluzione
+                if s_feat.shape[2:] != t_feat.shape[2:]:
+                    s_feat = F.interpolate(s_feat, size=t_feat.shape[2:], mode='bilinear', align_corners=False)
 
                 # anomaly map locale
                 # layer_map = torch.mean((t_feat - s_feat) ** 2, dim=1, keepdim=True)
@@ -159,13 +187,14 @@ def test(teacher, student, test_loader, device, threshold, reverse_distillation=
             # se lo score supera la soglia è ANOMALA
             predictions = torch.where(img_anomaly_scores > threshold, 0, 1)
 
-            save_anomaly_visualizations(images=inputs,
-                                        masks=masks,
-                                        anomaly_maps=smoothed_map, # smoothed_map per una visualizzazione pulita senza rumore
-                                        targets=targets, 
-                                        predictions=predictions, 
-                                        batch_idx=batch_idx,
-                                        save_dir="risultati")
+            if save_vis:
+                save_anomaly_visualizations(images=inputs,
+                                            masks=masks,
+                                            anomaly_maps=smoothed_map, # smoothed_map per una visualizzazione pulita senza rumore
+                                            targets=targets, 
+                                            predictions=predictions, 
+                                            batch_idx=batch_idx,
+                                            save_dir="risultati")
 
             # accuratezza
             correct_predictions += (predictions == targets).sum().item()
@@ -176,6 +205,10 @@ def test(teacher, student, test_loader, device, threshold, reverse_distillation=
 
             all_pixel_scores.extend(smoothed_map.cpu().numpy().flatten())
             all_pixel_targets.extend((masks > 0.5).cpu().numpy().astype(np.int32).flatten())
+
+    if device.type == 'cuda':
+        torch.cuda.synchronize()
+    total_inf_time = time.perf_counter() - start_inf_time
 
     accuracy = (correct_predictions / total_samples) * 100
     print(f"[TEST] Test completato. Accuratezza globale: {accuracy:.2f}% ({correct_predictions}/{total_samples})")
@@ -214,11 +247,24 @@ def test(teacher, student, test_loader, device, threshold, reverse_distillation=
     print(f"[TEST] Recall: {recall * 100:.2f}% (Di tutti i difetti reali, quanti ne ho trovati?)")
     print(f"[TEST] F1-Score: {f1 * 100:.2f}% (Media armonica tra Precision e Recall)")
 
-    return accuracy, all_anomaly_scores, all_targets
+    metrics = {
+        "accuracy": accuracy,
+        "image_roc_auc": auc_score,
+        "pixel_roc_auc": pixel_auc_score,
+        "pr_auc": pr_auc,
+        "precision": precision,
+        "recall": recall,
+        "f1_score": f1,
+        "inference_latency_ms": (total_inf_time / total_samples) * 1000.0,
+        "fps": total_samples / total_inf_time
+    }
+
+    return metrics, all_anomaly_scores, all_targets
 
 
 def save_anomaly_visualizations(images, masks, anomaly_maps, targets, predictions, batch_idx, save_dir="results"):
     """
+    salva i PNG con immagine originale, maschera ground truth e anomaly heatmap.
     """
     os.makedirs(save_dir, exist_ok=True)
 
@@ -355,6 +401,11 @@ def get_validation_threshold(teacher, student, val_loader, device, reverse_disti
             for key in RETURN_NODES.values():
                 t_feat = F.normalize(t_outs[key], p=2, dim=1)
                 s_feat = F.normalize(s_outs[key], p=2, dim=1)
+
+                # se non hanno la stessa risoluzione
+                if s_feat.shape[2:] != t_feat.shape[2:]:
+                    s_feat = F.interpolate(s_feat, size=t_feat.shape[2:], mode='bilinear', align_corners=False)
+
                 cos_sim = F.cosine_similarity(t_feat, s_feat, dim=1).unsqueeze(1)
                 layer_map = 1 - cos_sim
                 layer_map_resized = F.interpolate(layer_map, size=(h, w), mode='bilinear', align_corners=False)

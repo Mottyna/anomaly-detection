@@ -5,7 +5,7 @@ Lo scopo del progetto era implementare e testare con vari modelli la tecnica di 
 *anomaly detection* su datasets [mvtecAD](https://www.mvtec.com/research-teaching/datasets/mvtec-ad).
 
 
-## 🚀 Caratteristiche principali
+## Caratteristiche principali
 * **Multi-architettura:** Supporto per diversi modelli Teacher pre-addestrati (`resnet18`, `resnet50`, `wideresnet50`).
 * **Due paradigmi di distillazione:**
     * **Standard knowledge distillation:** Allineamento diretto delle feature tramite conv 1x1 (`ProjectorWrapper`).
@@ -18,7 +18,7 @@ Lo scopo del progetto era implementare e testare con vari modelli la tecnica di 
 * **Visualizzazione delle anomalie:** Generazione di heatmap comparative (immagine originale, maschera *ground truth* e *anomaly map*) salvate in formato PNG.
 
 
-## 📂 Struttura del progetto
+## Struttura del progetto
 
 ```text
 ├── main.py          # Entry point del programma (gestione argomenti, loader e pipeline)
@@ -31,7 +31,7 @@ Lo scopo del progetto era implementare e testare con vari modelli la tecnica di 
 ```
 
 
-## 🛠️ Requisiti e installazione
+## Requisiti e installazione
 Il progetto richiede Python 3.8+ e le seguenti librerie principali:
 ```
 pip install torch torchvision scikit-learn numpy matplotlib pillow
@@ -42,15 +42,21 @@ Scarica il dataset MVTec AD e posizionalo all'interno di una cartella chiamata m
 ```
 ./mvtec/
 └── bottle/
+    ├── ground_truth/
+    |   ├── broken_large/
+    |   ├── broken_small/
+    |   └── contamination/
+    ├── test/
+    │   ├── broken_large/
+    |   ├── broken_small/
+    |   ├── contamination/
+    |   └── good/
     ├── train/
-    │   └── good/
-    └── test/
-        ├── good/
-        └── broken_large/
+        └── good/
 ```
 
 
-## 💻 Come utilizzare il progetto
+## Come utilizzare il progetto
 Il file `main.py` accetta tre argomenti posizionali da riga di comando:
 ```
 python3 main.py <categoria_dataset> <modello_teacher> <modello_student>
@@ -67,7 +73,7 @@ python3 main.py carpet resnet50 resnet18
 ```
 
 
-## ⚙️ Dettagli tecnici rilevanti
+## Dettagli tecnici rilevanti
 ### Prevenzione dell'effetto bordo
 Nella fase di estrazione della mappa di anomalie (`actions.py`), i bordi dell'immagine tendono a generare falsi positivi. Il codice azzera artificialmente un margine di 10 pixel lungo i bordi per pulire il segnale.
 
@@ -79,7 +85,7 @@ Per evitare che la dimensione fisica del difetto influenzi eccessivamente lo sco
 
 
 
-## 📊 Output
+## Output
 Al termine della fase di test, all'interno della cartella `risultati/` verranno salvate immagini di confronto nominate `anomaly_sample_[ID].png`. Ogni immagine contiene:
 * **Originale**: L'immagine di input denormalizzata con il target reale.
 * **Ground Truth**: La maschera binaria reale del difetto.
@@ -94,7 +100,7 @@ Sul terminale verrano stampate le metriche di valutazione:
 - threshold ottimale calcolato a posteriori (*non* quello usato per calcolare le metriche)
 
 
-## 📜 Crediti
+## Crediti
 
 Questo progetto include e adatta codice open-source di terze parti:
 

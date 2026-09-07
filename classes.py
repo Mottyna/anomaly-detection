@@ -1,11 +1,13 @@
 from torchvision.models import (resnet50, ResNet50_Weights,
                                 wide_resnet50_2, Wide_ResNet50_2_Weights,
                                 resnet34, ResNet34_Weights,
-                                resnet18, ResNet18_Weights)
+                                resnet18, ResNet18_Weights,
+                                efficientnet_b0, EfficientNet_B0_Weights)
 from torchvision.models.feature_extraction import create_feature_extractor
 import torch.nn as nn
 import torch.nn.functional as F
 import torch
+
 from parameters import RETURN_NODES
 
 
@@ -25,6 +27,11 @@ class Teacher:
         elif model_name == "resnet18":
             base_model = resnet18(weights=ResNet18_Weights.DEFAULT)
             self.channels = {'feat1': 64, 'feat2': 128, 'feat3': 256}
+        # EfficientNet
+        elif model_name == "efficientnet":
+            base_model = efficientnet_b0(weights=EfficientNet_B0_Weights.DEFAULT)
+            self.channels = {'feat1': 24, 'feat2': 80, 'feat3': 192}
+            self.return_nodes = { 'features.2': 'feat1', 'features.4': 'feat2', 'features.6': 'feat3'}
 
         self.model = create_feature_extractor(base_model, return_nodes=self.return_nodes)
 
