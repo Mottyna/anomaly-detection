@@ -6,16 +6,16 @@ Lo scopo del progetto era implementare e testare con vari modelli la tecnica di 
 
 
 ## Caratteristiche principali
-* **Multi-architettura:** Supporto per diversi modelli Teacher pre-addestrati (`resnet18`, `resnet50`, `wideresnet50`).
+* **Multi-architettura:** supporto per diversi modelli Teacher pre-addestrati (`resnet18`, `resnet50`, `wideresnet50`).
 * **Due paradigmi di distillazione:**
-    * **Standard knowledge distillation:** Allineamento diretto delle feature tramite conv 1x1 (`ProjectorWrapper`).
-    * **Reverse Distillation for Anomaly Detection (RD4AD):** Passaggio delle feature del Teacher attraverso un collo di bottiglia (`Bottleneck`) e successiva ricostruzione tramite Decoder con connessioni skip non corrispondenti.
-* **Calibrazione automatica del threshold:** Calcolo della soglia ottimale di decisione sul set di validazione tramite la generazione di anomalie sintetiche (tecniche di *Cut-Paste* e *Alpha Blending Noise/Color*) e l'indice di Youden.
-* **Valutazione:** Calcolo delle metriche di performance sia a livello immagine che a livello pixel:
-    * Image-level & Pixel-level ROC-AUC
+    * **Standard knowledge distillation:** allineamento diretto delle feature tramite conv 1x1 (`ProjectorWrapper`).
+    * **Reverse Distillation for Anomaly Detection (RD4AD):** passaggio delle feature del Teacher attraverso un collo di bottiglia (`Bottleneck`) e successiva ricostruzione tramite decoder con connessioni skip non corrispondenti.
+* **Calibrazione automatica del threshold:**calcolo della soglia ottimale di decisione sul set di validazione tramite la generazione di anomalie sintetiche (tecniche di *Cut-paste* e *Alpha blending noise/color*) e l'indice di Youden.
+* **Valutazione:** calcolo delle metriche di performance sia a livello immagine che a livello pixel:
+    * image-level & pixel-level ROC-AUC
     * PR-AUC globale
     * Precision, Recall e F1-Score
-* **Visualizzazione delle anomalie:** Generazione di heatmap comparative (immagine originale, maschera *ground truth* e *anomaly map*) salvate in formato PNG.
+* **Visualizzazione delle anomalie:** generazione di heatmap comparative (immagine originale, maschera *ground truth* e *anomaly map*) salvate in formato PNG.
 
 
 ## Struttura del progetto
@@ -60,7 +60,7 @@ Scarica il dataset MVTec AD e posizionalo all'interno di una cartella chiamata m
 
 
 ## Come utilizzare il progetto
-### Anomaly detection / Benchmark di una sola coppia teacher-student alla volta
+### Anomaly detection / benchmark di una sola coppia teacher-student alla volta
 Il file `main.py` accetta da tre a quattro argomenti posizionali da riga di comando, a seconda della modalita' desiderata:
 ```
 python3 main.py <categoria_dataset> <modello_teacher> <modello_student>
@@ -100,17 +100,17 @@ Nella fase di estrazione della mappa di anomalie (`actions.py`), i bordi dell'im
 ### Top-k pixel pooling
 Per evitare che la dimensione fisica del difetto influenzi eccessivamente lo score globale dell'immagine, la metrica a livello di immagine viene calcolata estraendo solo lo 0.5% dei pixel peggiori (con errore più alto) e facendone la media.
 
-### Bilanciamento dei Layer (`parameters.py`)
-È possibile associare pesi diversi ai vari layer della rete student nella *reverse distillation* a seconda della categoria del dataset (es. dare più importanza ai layer iniziali per le textures o ai layer profondi per le forme).
+### Bilanciamento dei layer (`parameters.py`)
+È possibile associare pesi diversi ai vari layer della rete student nella *reverse distillation* a seconda della categoria del dataset (es. dare piu' importanza ai layer iniziali per le textures o ai layer profondi per le forme).
 
 
 
 ## Output
 ### Modalita' standard (`main.py`)
 Al termine della fase di test (solo se eseguito in modalita' standard), all'interno della cartella `risultati/` verranno salvate immagini di confronto nominate `anomaly_sample_[ID].png`. Ogni immagine contiene:
-* **Originale**: L'immagine di input denormalizzata con il target reale.
-* **Ground Truth**: La maschera binaria reale del difetto.
-* **Anomaly Map (Heatmap)**: La mappa di calore generata dal modello (in scala di colori jet), affiancata dalla predizione finale del sistema (Normale o Anomalo).
+* **Originale**: l'immagine di input denormalizzata con il target reale.
+* **Ground Truth**: la maschera binaria reale del difetto.
+* **Anomaly Map (Heatmap)**: la mappa di calore generata dal modello (in scala di colori jet), affiancata dalla predizione finale del sistema (Normale o Anomalo).
 
 Sul terminale verrano stampate le metriche di valutazione:
 - ROC-AUC (globale e a livello di pixel)
@@ -135,9 +135,9 @@ Nella cartella `risultati_benchmark` verranno salvati un file `.csv` contenente 
 ## Crediti
 Questo progetto include e adatta codice open-source di terze parti:
 
-* **MVTec Dataloader (`mvtec.py`):** Adattato dal repository originale di [@b3r8](https://github.com/b3r8) ([b3r8/mvtec-dataloader](https://github.com/b3r8/mvtec-dataloader)), rilasciato sotto licenza **MIT**. Il file originale è stato modificato per integrare e restituire le maschere di Ground Truth (GT) necessarie per la valutazione a livello di pixel.
+* **MVTec Dataloader (`mvtec.py`):** Adattato dal repository originale di [@b3r8](https://github.com/b3r8) ([b3r8/mvtec-dataloader](https://github.com/b3r8/mvtec-dataloader)), rilasciato sotto licenza **MIT**. Il file originale e' stato modificato per integrare e restituire le maschere di Ground Truth (GT) necessarie per la valutazione a livello di pixel.
 
-La mia implementazione della *reverse distillation* è ispirata all'idea presentata nel paper [SK-RD4AD](https://openaccess.thecvf.com/content/CVPR2025W/VAND/html/Park_SK-RD4AD__Skip-Connected_Reverse_Distillation_For_Robust_One-Class_Anomaly_Detection_CVPRW_2025_paper.html), implementato nella repository [pej0918/SK-RD4AD/tree/main](https://github.com/pej0918/SK-RD4AD/tree/main).
+La mia implementazione della *reverse distillation* e' ispirata all'idea presentata nel paper [SK-RD4AD](https://openaccess.thecvf.com/content/CVPR2025W/VAND/html/Park_SK-RD4AD__Skip-Connected_Reverse_Distillation_For_Robust_One-Class_Anomaly_Detection_CVPRW_2025_paper.html), implementato nella repository [pej0918/SK-RD4AD/tree/main](https://github.com/pej0918/SK-RD4AD/tree/main).
 
 
 

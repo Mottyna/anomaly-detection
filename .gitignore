@@ -5,3 +5,4 @@ mvtec/leather
 mvtec/hazelnut
 risultati
 risultati_benchmark/*
+.gitignore

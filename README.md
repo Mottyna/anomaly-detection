@@ -4,16 +4,16 @@ Project work for the Computer Vision course at [Unife](https://corsi.unife.it/it
 The goal of this project was to implement and test the *knowledge distillation* technique for *anomaly detection* across various models on the [MVTec AD](https://www.mvtec.com/research-teaching/datasets/mvtec-ad) dataset.
 
 ## Main features
-* **Multi-architecture:** Support for several pre-trained Teacher models (`resnet18`, `resnet50`, `wideresnet50`).
+* **Multi-architecture:** support for several pre-trained Teacher models (`resnet18`, `resnet50`, `wideresnet50`).
 * **Two distillation paradigms:**
-    * **Standard knowledge distillation:** Direct feature alignment using 1x1 convolutions (`ProjectorWrapper`).
-    * **Reverse Distillation for Anomaly Detection (RD4AD):** Passing Teacher features through a bottleneck (`Bottleneck`), followed by reconstruction using Decoders with non-corresponding skip-connections.
-* **Automatic threshold calibration:** Calculation of the optimal decision threshold on the validation set via synthetic anomaly generation (*Cut-Paste* and *Alpha Blending Noise/Color* techniques) and the Youden index.
-* **Evaluation:** Calculation of performance metrics at both image and pixel levels:
-    * Image-level & Pixel-level ROC-AUC
-    * Global PR-AUC
+    * **Standard knowledge distillation:** direct feature alignment using 1x1 convolutions (`ProjectorWrapper`).
+    * **Reverse Distillation for Anomaly Detection (RD4AD):** passing Teacher features through a bottleneck (`Bottleneck`), followed by reconstruction using decoders with non-corresponding skip-connections.
+* **Automatic threshold calibration:** calculation of the optimal decision threshold on the validation set via synthetic anomaly generation (*Cut-paste* and *Alpha blending noise/color* techniques) and the Youden index.
+* **Evaluation:** calculation of performance metrics at both image and pixel levels:
+    * image-level & pixel-level ROC-AUC
+    * global PR-AUC
     * Precision, Recall, and F1-Score
-* **Anomaly visualization:** Generation of comparative heatmaps (original image, *ground truth* mask, and *anomaly map*) saved in PNG format.
+* **Anomaly visualization:** generation of comparative heatmaps (original image, *ground truth* mask, and *anomaly map*) saved in PNG format.
 
 ## Project structure
 
