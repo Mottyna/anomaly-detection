@@ -56,9 +56,9 @@ def benchmark_epochs(teacher, student, train_loader, val_loader, test_loader, ma
         }
         epoch_history.append(record)
         print(f"[CHECKPOINT] Epoch {current_epoch}/{max_epochs} | "
-                f"Img AUC: {record['image_roc_auc']:.2f}% | "
-                f"Pixel AUC: {record['pixel_roc_auc']:.2f}% | "
-                f"F1: {record['f1_score']:.2f}% | "
+                f"Img AUC: {record['image_roc_auc'] * 100:.2f}% | "
+                f"Pixel AUC: {record['pixel_roc_auc'] * 100:.2f}% | "
+                f"F1: {record['f1_score'] * 100:.2f}% | "
                 f"Time: {record['cumulative_train_sec']}s")
 
         student_to_train = trained_student
