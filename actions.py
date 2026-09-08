@@ -13,7 +13,7 @@ import time
 from parameters import RETURN_NODES, MEAN, STD, WEIGHTS
 
 
-def train(teacher, student, train_loader, epochs, learning_rate, T, device, reverse_distillation=False, optimizer=None, scheduler=None):
+def train(teacher, student, train_loader, epochs, learning_rate, T, device, reverse_distillation=False, optimizer=None, scheduler=None, quiet=False):
     """
     addestramento del modello student.
     """
@@ -29,7 +29,9 @@ def train(teacher, student, train_loader, epochs, learning_rate, T, device, reve
     if scheduler is None:
         scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
 
-    print(f"\n--- Inizio Addestramento ({epochs} Epoche) ---")
+    if not quiet:
+        print(f"\n--- Inizio Addestramento ({epochs} Epoche) ---")
+
     if device.type == 'cuda':
         torch.cuda.synchronize()
     start_train_time = time.perf_counter()
@@ -79,7 +81,8 @@ def train(teacher, student, train_loader, epochs, learning_rate, T, device, reve
             running_loss += loss.item()
 
         scheduler.step()    # aggiorno il learning rate
-        print(f"[TRAIN] Epoch {epoch+1}/{epochs}, Loss: {running_loss / len(train_loader)}")
+        if not quiet:
+            print(f"[TRAIN] Epoch {epoch+1}/{epochs}, Loss: {running_loss / len(train_loader)}")
 
     if device.type == 'cuda':
         torch.cuda.synchronize()
@@ -88,7 +91,7 @@ def train(teacher, student, train_loader, epochs, learning_rate, T, device, reve
     return student, total_train_time
 
 
-def test(teacher, student, test_loader, device, threshold, reverse_distillation=False, save_vis=True):
+def test(teacher, student, test_loader, device, threshold, reverse_distillation=False, save_vis=True, quiet=False):
     """
     valutazione del modello.
     """
@@ -104,7 +107,9 @@ def test(teacher, student, test_loader, device, threshold, reverse_distillation=
     all_pixel_scores = []
     all_pixel_targets = []
 
-    print("\n--- Avvio fase di test ---")
+    if not quiet:
+        print("\n--- Avvio fase di test ---")
+
     if device.type == 'cuda':
         torch.cuda.synchronize()
     start_inf_time = time.perf_counter()
@@ -211,7 +216,7 @@ def test(teacher, student, test_loader, device, threshold, reverse_distillation=
     total_inf_time = time.perf_counter() - start_inf_time
 
     accuracy = (correct_predictions / total_samples) * 100
-    print(f"[TEST] Test completato. Accuratezza globale: {accuracy:.2f}% ({correct_predictions}/{total_samples})")
+
     targets_np = np.array(all_targets)
     scores_np = np.array(all_anomaly_scores)
     pixel_targets_np = np.array(all_pixel_targets)
@@ -220,16 +225,13 @@ def test(teacher, student, test_loader, device, threshold, reverse_distillation=
     anomalia_come_classe_positiva = 1 - targets_np 
     
     auc_score = roc_auc_score(anomalia_come_classe_positiva, scores_np)
-    print(f"[TEST] ROC-AUC score globale (image level): {auc_score * 100:.2f}%")
 
     pixel_auc_score = roc_auc_score(pixel_targets_np, pixel_scores_np)
-    print(f"[TEST] ROC-AUC score locale (pixel level): {pixel_auc_score * 100:.2f}%")
 
     # calcolo automatico della soglia ottimale (Youden)
     fpr, tpr, thresholds = roc_curve(anomalia_come_classe_positiva, scores_np)
     best_idx = np.argmax(tpr - fpr)
     optimal_threshold = thresholds[best_idx]
-    print(f"[TEST] Threshold ottimale calcolato nella fase di test (tramite AUC-ROC): {optimal_threshold:.6f}")
 
     # PR-AUC 
     precision_curve, recall_curve, _ = precision_recall_curve(anomalia_come_classe_positiva, scores_np)
@@ -242,10 +244,15 @@ def test(teacher, student, test_loader, device, threshold, reverse_distillation=
     recall = recall_score(anomalia_come_classe_positiva, binary_predictions, zero_division=0)
     f1 = f1_score(anomalia_come_classe_positiva, binary_predictions, zero_division=0)
 
-    print(f"[TEST] PR-AUC score globale: {pr_auc * 100:.2f}%")
-    print(f"[TEST] Precision: {precision * 100:.2f}% (Se dico 'Difetto', quante volte e' corretto?)")
-    print(f"[TEST] Recall: {recall * 100:.2f}% (Di tutti i difetti reali, quanti ne ho trovati?)")
-    print(f"[TEST] F1-Score: {f1 * 100:.2f}% (Media armonica tra Precision e Recall)")
+    if not quiet:
+        print(f"[TEST] Test completato. Accuratezza globale: {accuracy:.2f}% ({correct_predictions}/{total_samples})")
+        print(f"[TEST] ROC-AUC score globale (image level): {auc_score * 100:.2f}%")
+        print(f"[TEST] ROC-AUC score locale (pixel level): {pixel_auc_score * 100:.2f}%")
+        print(f"[TEST] Threshold ottimale calcolato nella fase di test (tramite AUC-ROC): {optimal_threshold:.6f}")
+        print(f"[TEST] PR-AUC score globale: {pr_auc * 100:.2f}%")
+        print(f"[TEST] Precision: {precision * 100:.2f}% (Se dico 'Difetto', quante volte e' corretto?)")
+        print(f"[TEST] Recall: {recall * 100:.2f}% (Di tutti i difetti reali, quanti ne ho trovati?)")
+        print(f"[TEST] F1-Score: {f1 * 100:.2f}% (Media armonica tra Precision e Recall)")
 
     metrics = {
         "accuracy": accuracy,
@@ -369,7 +376,7 @@ def generate_synthetic_anomalies(inputs):
     return corrupted_inputs, targets
 
 
-def get_validation_threshold(teacher, student, val_loader, device, reverse_distillation=False):
+def get_validation_threshold(teacher, student, val_loader, device, reverse_distillation=False, quiet=False):
     """
     inserisce anomalie sintetiche nei dati di validazione per trovare la 
     soglia che massimizza la separazione geometrica (Youden).
@@ -380,7 +387,9 @@ def get_validation_threshold(teacher, student, val_loader, device, reverse_disti
     all_anomaly_scores = []
     all_targets = []
     
-    print("\n--- Calibrazione del threshold ---")
+    if not quiet:
+        print("\n--- Calibrazione del threshold ---")
+
     with torch.no_grad():
         for inputs, _ in val_loader:
             inputs = inputs.to(device)
@@ -440,5 +449,7 @@ def get_validation_threshold(teacher, student, val_loader, device, reverse_disti
     best_idx = np.argmax(tpr - fpr)
     threshold = thresholds[best_idx]
     
-    print(f"[VALIDAZIONE] Threshold ottimale: {threshold:.6f}")
+    if not quiet:
+        print(f"[VALIDAZIONE] Threshold ottimale: {threshold:.6f}")
+
     return threshold

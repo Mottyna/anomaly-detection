@@ -34,7 +34,7 @@ def set_seed(seed):
 def run_full_benchmark(category="bottle", max_epochs=100, n_checkpoints=10, batch_size=20, output_dir="risultati_benchmark"):
     os.makedirs(output_dir, exist_ok=True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"=== Benchmark [{category.upper()}] on {device.type.upper()} ===")
+    print(f"--- Benchmark [{category.upper()}] su {device.type.upper()} ---")
 
     # SEED
     set_seed(SEED)
@@ -70,10 +70,10 @@ def run_full_benchmark(category="bottle", max_epochs=100, n_checkpoints=10, batc
 
     for t_name in TEACHERS:
         for s_name in STUDENTS:
-            pair_name = f"T:{t_name}__S:{s_name}"
-            print(f"\n==================================================")
-            print(f"  Benchmarking now: {pair_name}")
-            print(f"==================================================")
+            pair_name = f"Teacher:{t_name}, Student:{s_name}"
+            print(f"\n-------------------------------------------------")
+            print(f"  Benchmarking now: {pair_name}  <3")
+            print(f"-------------------------------------------------\n")
 
             set_seed(SEED)
 

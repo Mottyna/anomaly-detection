@@ -27,7 +27,8 @@ def benchmark_epochs(teacher, student, train_loader, val_loader, test_loader, ma
                             device=device,
                             reverse_distillation=reverse_distillation,
                             optimizer=optimizer,
-                            scheduler=scheduler)
+                            scheduler=scheduler,
+                            quiet=True)
 
         cumulative_train_time += delta_time
 
@@ -35,7 +36,8 @@ def benchmark_epochs(teacher, student, train_loader, val_loader, test_loader, ma
                                     student=trained_student,
                                     val_loader=val_loader,
                                     device=device,
-                                    reverse_distillation=reverse_distillation)
+                                    reverse_distillation=reverse_distillation,
+                                    quiet=True)
 
         metrics, _, _ = test(teacher=teacher, 
                                     student=trained_student, 
@@ -43,7 +45,8 @@ def benchmark_epochs(teacher, student, train_loader, val_loader, test_loader, ma
                                     device=device,
                                     threshold=threshold,
                                     reverse_distillation=reverse_distillation,
-                                    save_vis=False)
+                                    save_vis=False,
+                                    quiet=True)
 
         record = {
             "epoch": current_epoch,
