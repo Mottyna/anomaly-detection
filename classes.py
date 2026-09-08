@@ -132,7 +132,7 @@ class ReverseDistillationStudent(nn.Module):
         self.decoder_feat3 = self._make_decoder_block(bottleneck_out, t_ch3)
         # feat2 decoder riceve s_feat3 + teacher feat3
         self.decoder_feat2 = self._make_decoder_block(t_ch3 * 2, t_ch2)
-        # 3. feat1 decoder riceve s_feat2 + teacher feat2
+        # feat1 decoder riceve s_feat2 + teacher feat2
         self.decoder_feat1 = self._make_decoder_block(t_ch2 * 2, t_ch1)
 
     def _make_decoder_block(self, in_channels, out_channels):

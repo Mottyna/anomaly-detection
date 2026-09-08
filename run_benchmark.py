@@ -1,3 +1,5 @@
+import os
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 import torch
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
@@ -5,10 +7,10 @@ from torchvision.models import resnet50, resnet18, efficientnet_b0
 from torchvision.models.feature_extraction import create_feature_extractor
 import pandas as pd
 import json
-import os
 import sys
 import random
 import numpy as np
+import gc
 
 import mvtec
 from benchmark import benchmark_epochs
@@ -34,6 +36,7 @@ def set_seed(seed):
 def run_full_benchmark(category="bottle", max_epochs=100, n_checkpoints=10, batch_size=20, output_dir="risultati_benchmark"):
     os.makedirs(output_dir, exist_ok=True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
     print(f"--- Benchmark [{category.upper()}] su {device.type.upper()} ---")
 
     # SEED
@@ -71,9 +74,13 @@ def run_full_benchmark(category="bottle", max_epochs=100, n_checkpoints=10, batc
     for t_name in TEACHERS:
         for s_name in STUDENTS:
             pair_name = f"Teacher:{t_name}, Student:{s_name}"
-            print(f"\n-------------------------------------------------")
+            print(f"\n--------------------------------------------------------------")
             print(f"  Benchmarking now: {pair_name}  <3")
-            print(f"-------------------------------------------------\n")
+            print(f"--------------------------------------------------------------\n")
+
+            # PULIZIA
+            gc.collect()
+            torch.cuda.empty_cache()
 
             set_seed(SEED)
 
