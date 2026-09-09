@@ -14,12 +14,12 @@ import gc
 
 import mvtec
 from benchmark import benchmark_epochs
-from parameters import RETURN_NODES, SEED, MEAN, STD
+from parameters import RETURN_NODES, SEED, MEAN, STD, RESULTS_DIR
 from main import anomaly_detection
 
 
 TEACHERS = ["resnet50", "wideresnet50", "resnet18", "efficientnet"]
-STUDENTS = ["rd4ad", "resnet18", "resnet50", "efficientnet"]
+STUDENTS = ["rd4ad", "resnet18", "resnet50", "efficientnet", "mobilenet"]
 
 
 def set_seed(seed):
@@ -33,7 +33,7 @@ def set_seed(seed):
         torch.backends.cudnn.benchmark = False
 
 
-def run_full_benchmark(category="bottle", max_epochs=100, n_checkpoints=10, batch_size=20, output_dir="risultati_benchmark"):
+def run_full_benchmark(category="bottle", max_epochs=100, n_checkpoints=10, batch_size=20, output_dir=RESULTS_DIR):
     os.makedirs(output_dir, exist_ok=True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

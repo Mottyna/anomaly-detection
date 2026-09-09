@@ -6,7 +6,7 @@ Lo scopo del progetto era implementare e testare con vari modelli la tecnica di 
 
 
 ## Caratteristiche principali
-* **Multi-architettura:** supporto per diversi modelli Teacher pre-addestrati (`resnet18`, `resnet50`, `wideresnet50`).
+* **Multi-architettura:** supporto per diversi modelli Teacher pre-addestrati (`resnet18`, `resnet50`, `wideresnet50`, `efficientnet`).
 * **Due paradigmi di distillazione:**
     * **Standard knowledge distillation:** allineamento diretto delle feature tramite conv 1x1 (`ProjectorWrapper`).
     * **Reverse Distillation for Anomaly Detection (RD4AD):** passaggio delle feature del Teacher attraverso un collo di bottiglia (`Bottleneck`) e successiva ricostruzione tramite decoder con connessioni skip non corrispondenti.
@@ -36,8 +36,8 @@ Lo scopo del progetto era implementare e testare con vari modelli la tecnica di 
 
 ## Requisiti e installazione
 Il progetto richiede Python 3.8+ e le seguenti librerie principali:
-```
-pip install torch torchvision scikit-learn numpy matplotlib pillow
+```bash
+pip install torch torchvision scikit-learn numpy matplotlib pillow seaborn
 ```
 
 ### Configurazione del dataset
@@ -130,7 +130,7 @@ Sul terminale verrano stampate le metriche di valutazione a ogni checkpoint dell
 - threshold ottimale calcolato a posteriori (*non* quello usato per calcolare le metriche)
 
 ### Benchmark (`run_benchmark.py`)
-Nella cartella `risultati_benchmark` verranno salvati un file `.csv` contenente i migliori risultati ottenuti da ogni coppia teacher-student testata e altre metriche, e un file `.json` che rappresenta l'andamento dell'addestramento.
+Nella cartella `risultati_benchmark` verranno salvati un file `.csv` contenente i migliori risultati ottenuti da ogni coppia teacher-student testata e altre metriche, e un file `.json` che registra l'andamento dell'addestramento.
 
 ## Crediti
 Questo progetto include e adatta codice open-source di terze parti:

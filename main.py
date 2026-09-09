@@ -1,4 +1,4 @@
-from torchvision.models import resnet50, resnet18, efficientnet_b0
+from torchvision.models import resnet50, resnet18, efficientnet_b0, mobilenet_v3_small
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 from torchvision.models.feature_extraction import create_feature_extractor
@@ -31,10 +31,11 @@ def anomaly_detection(dataset_name, teacher_model_name, student_model_name, trai
     student_model = sys.argv[2].strip()
 
     students_channels = {
-        "resnet50":         {'feat1': 256, 'feat2': 512, 'feat3': 1024},
-        "resnet18":         {'feat1': 64, 'feat2': 128, 'feat3': 256},
-        "efficientnet" :    {'feat1': 24, 'feat2': 80, 'feat3': 192}
-        # mobilenet, efficientnet ...
+        "resnet50":         {'feat1': 256,  'feat2': 512,   'feat3': 1024},
+        "resnet18":         {'feat1': 64,   'feat2': 128,   'feat3': 256},
+        "efficientnet":     {'feat1': 24,   'feat2': 80,    'feat3': 192},
+        "mobilenet":        {'feat1': 24,   'feat2': 48,    'feat3': 96}
+        # altri modelli?
     }
 
     # INIZIALIZZAZIONE STUDENT
@@ -58,8 +59,14 @@ def anomaly_detection(dataset_name, teacher_model_name, student_model_name, trai
 
     elif student_model_name == "efficientnet":
         student_efficient = efficientnet_b0(weights=None)
-        student_layers = create_feature_extractor(student_efficient, return_nodes={ 'features.2': 'feat1', 'features.4': 'feat2', 'features.6': 'feat3'})
+        student_layers = create_feature_extractor(student_efficient, return_nodes={'features.2': 'feat1', 'features.4': 'feat2', 'features.6': 'feat3'})
         student_extractor = ProjectorWrapper(student_layers, students_channels["efficientnet"], teacher.channels).to(device)
+        reverse_distillation = False
+
+    elif student_model_name == "mobilenet":
+        student_mobile = mobilenet_v3_small(weights=None)
+        student_layers = create_feature_extractor(student_mobile, return_nodes={'features.2': 'feat1', 'features.8': 'feat2', 'features.11': 'feat3'})
+        student_extractor = ProjectorWrapper(student_layers, students_channels["mobilenet"], teacher.channels).to(device)
         reverse_distillation = False
 
     else:

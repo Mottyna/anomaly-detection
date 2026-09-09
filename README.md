@@ -4,7 +4,7 @@ Project work for the Computer Vision course at [Unife](https://corsi.unife.it/it
 The goal of this project was to implement and test the *knowledge distillation* technique for *anomaly detection* across various models on the [MVTec AD](https://www.mvtec.com/research-teaching/datasets/mvtec-ad) dataset.
 
 ## Main features
-* **Multi-architecture:** support for several pre-trained Teacher models (`resnet18`, `resnet50`, `wideresnet50`).
+* **Multi-architecture:** support for several pre-trained Teacher models (`resnet18`, `resnet50`, `wideresnet50`, `efficientnet`).
 * **Two distillation paradigms:**
     * **Standard knowledge distillation:** direct feature alignment using 1x1 convolutions (`ProjectorWrapper`).
     * **Reverse Distillation for Anomaly Detection (RD4AD):** passing Teacher features through a bottleneck (`Bottleneck`), followed by reconstruction using decoders with non-corresponding skip-connections.
@@ -33,7 +33,7 @@ The goal of this project was to implement and test the *knowledge distillation* 
 ## Requirements and installation
 The project requires Python 3.8+ and the following libraries:
 ```bash
-pip install torch torchvision scikit-learn numpy matplotlib pillow
+pip install torch torchvision scikit-learn numpy matplotlib pillow seaborn
 ```
 
 ### Dataset configuration
@@ -122,7 +122,7 @@ The evaluation metrics will be printed to the terminal at each training checkpoi
 - Optimal threshold calculated using the test set (*not* the one used to compute the metrics)
 
 ### Benchmark (`run_benchmark.py`)
-In the `risultati_benchmark` (benchmark results) folder, a `.csv` file containing the best results obtained by each tested teacher-student pair and other metrics, alongside a `.json` file representing the training progress, will be saved.
+In the `risultati_benchmark` (benchmark results) folder, a `.csv` file containing the best results obtained by each tested teacher-student pair and other metrics, alongside a `.json` file documenting the training progress, will be saved.
 
 ## Credits 🙏
 This project includes and adapts third-party open-source code:

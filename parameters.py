@@ -9,3 +9,6 @@ STD = [0.229, 0.224, 0.225]
 
 # WEIGHTS = {'feat1': 0.7, 'feat2': 0.2, 'feat3': 0.1} # per texture
 WEIGHTS = {'feat1': 0.3, 'feat2': 0.5, 'feat3': 0.2} # per forme?
+
+RESULTS_DIR = "risultati_benchmark"
+PLOTS_DIR = "grafici"
