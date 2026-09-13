@@ -25,7 +25,9 @@ The goal of this project was to implement and test the *knowledge distillation* 
 ├── parameters.py           # Constants, seeds, hyperparameters, and layer weights
 ├── benchmark.py            # Definition of the `benchmark_epochs` function, which trains the student and provides checkpoints with intermediate results
 ├── run_benchmark.py        # Benchmark of all networks as students and teachers, with checkpoints at different training stages
+├── plot_results.py         # Plots benchmark results
 ├── risultati/              # [Auto-generated] Folder containing the test output plots
+├── grafici/                # [Auto-generated] Folder containing the benchmark plots
 ├── mvtec/                  # Folder that must contain the mvtec databases you want to test the program on
 └── risultati_benchmark/    # [Auto-generated] Folder containing the benchmark results
 ```

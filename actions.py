@@ -154,7 +154,6 @@ def test(teacher, student, test_loader, device, threshold, reverse_distillation=
                     global_anomaly_map += layer_map_resized*WEIGHTS[key]
 
 
-            # kernel_size=9 e sigma=4.0 sono lo standard per MVTec a 224x224
             smoothed_map = TF.gaussian_blur(global_anomaly_map, kernel_size=[5,5], sigma=[1.0, 1.0])
             # smoothed_map = TF.gaussian_blur(global_anomaly_map, kernel_size=[15,15], sigma=[4.0, 4.0])
 
@@ -175,27 +174,13 @@ def test(teacher, student, test_loader, device, threshold, reverse_distillation=
             # media di quest'area critica
             img_anomaly_scores = torch.mean(topk_scores, dim=1)
 
-            """
-            # top-K pooling
-            flat_anomaly_map = global_anomaly_map.view(batch_size, -1)
-            # 2% dell'immagine
-            k = max(1, int(flat_anomaly_map.shape[1] * 0.02))
-            # uso i k pixel con errore maggiore
-            topk_scores, _ = torch.topk(flat_anomaly_map, k, dim=1)
-            
-            # lo score diventa la media dei pixel peggiori, in questo modo la dimensione della parte anomala non influisce sulla decisione
-            img_anomaly_scores = torch.mean(topk_scores, dim=1)
-            """
-            # img_anomaly_scores = torch.mean(global_anomaly_map, dim=[1, 2, 3])
-            # img_anomaly_scores, _ = torch.max(anomaly_map_resized.view(inputs.size(0), -1), dim=1)
-
             # se lo score supera la soglia è ANOMALA
             predictions = torch.where(img_anomaly_scores > threshold, 0, 1)
 
             if save_vis:
                 save_anomaly_visualizations(images=inputs,
                                             masks=masks,
-                                            anomaly_maps=smoothed_map, # smoothed_map per una visualizzazione pulita senza rumore
+                                            anomaly_maps=smoothed_map,
                                             targets=targets, 
                                             predictions=predictions, 
                                             batch_idx=batch_idx,
@@ -228,7 +213,7 @@ def test(teacher, student, test_loader, device, threshold, reverse_distillation=
 
     pixel_auc_score = roc_auc_score(pixel_targets_np, pixel_scores_np)
 
-    # calcolo automatico della soglia ottimale (Youden)
+    # calcolo della soglia ottimale (Youden)
     fpr, tpr, thresholds = roc_curve(anomalia_come_classe_positiva, scores_np)
     best_idx = np.argmax(tpr - fpr)
     optimal_threshold = thresholds[best_idx]
@@ -250,9 +235,9 @@ def test(teacher, student, test_loader, device, threshold, reverse_distillation=
         print(f"[TEST] ROC-AUC score locale (pixel level): {pixel_auc_score * 100:.2f}%")
         print(f"[TEST] Threshold ottimale calcolato nella fase di test (tramite AUC-ROC): {optimal_threshold:.6f}")
         print(f"[TEST] PR-AUC score globale: {pr_auc * 100:.2f}%")
-        print(f"[TEST] Precision: {precision * 100:.2f}% (Se dico 'Difetto', quante volte e' corretto?)")
-        print(f"[TEST] Recall: {recall * 100:.2f}% (Di tutti i difetti reali, quanti ne ho trovati?)")
-        print(f"[TEST] F1-Score: {f1 * 100:.2f}% (Media armonica tra Precision e Recall)")
+        print(f"[TEST] Precision: {precision * 100:.2f}%")
+        print(f"[TEST] Recall: {recall * 100:.2f}%")
+        print(f"[TEST] F1-Score: {f1 * 100:.2f}%")
 
     metrics = {
         "accuracy": accuracy,
@@ -298,17 +283,17 @@ def save_anomaly_visualizations(images, masks, anomaly_maps, targets, prediction
         
         # pannello 1: originale
         axes[0].imshow(img)
-        axes[0].set_title(f"Originale (Target: {targets[i].item()})")
+        axes[0].set_title(f"Originale (target: {targets[i].item()})")
         axes[0].axis('off')
 
         # pannello 2: ground truth
         axes[1].imshow(gt_mask, cmap='gray')
-        axes[1].set_title("Ground Truth (Maschera Reale)")
+        axes[1].set_title("Ground truth (maschera reale)")
         axes[1].axis('off')
         
         # pannello 2: Anomaly Map
         axes[2].imshow(amap_normalized, cmap='jet')
-        axes[2].set_title(f"Anomaly Map (Heatmap), predizione: {'Normale' if predictions[i].item() == 1 else 'Anomalo'}")
+        axes[2].set_title(f"Anomaly map (heatmap), predizione: {'normale' if predictions[i].item() == 1 else 'anomalo'}")
         axes[2].axis('off')
 
         img_id = batch_idx * batch_size + i
@@ -379,7 +364,7 @@ def generate_synthetic_anomalies(inputs):
 def get_validation_threshold(teacher, student, val_loader, device, reverse_distillation=False, quiet=False):
     """
     inserisce anomalie sintetiche nei dati di validazione per trovare la 
-    soglia che massimizza la separazione geometrica (Youden).
+    soglia che massimizza la separazione geometrica.
     """
     teacher.eval()
     student.eval()

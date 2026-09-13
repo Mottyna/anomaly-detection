@@ -79,7 +79,7 @@ def anomaly_detection(dataset_name, teacher_model_name, student_model_name, trai
         trained_student, _ = train(teacher=teacher.model, 
                             student=student_extractor, 
                             train_loader=train_loader, 
-                            epochs=max_epochs, # overfitting per rd4ad?
+                            epochs=max_epochs,
                             learning_rate=0.001, 
                             T=2, 
                             device=device,
@@ -128,16 +128,24 @@ if __name__ == "__main__":
     benchmark_mode = False
 
     if len(sys.argv) < 4 or len(sys.argv) > 5:
-        print(f"Uso corretto:\npython3 {sys.argv[0]} <categoria_dataset> <modello_teacher> <modello_student>\npython3 {sys.argv[0]} <categoria_dataset> <modello_teacher> <modello_student> --benchmark\n")
+        print(f"Uso corretto:\npython3 {sys.argv[0]} <categoria_dataset> <modello_teacher> <modello_student>\npython3 {sys.argv[0]} <categoria_dataset> <modello_teacher> <modello_student> --benchmark\npython3 {sys.argv[0]} <categoria_dataset> <modello_teacher> <modello_student> <n_epoche>\n")
         print("Esempio:\npython main.py bottle wideresnet50 rd4ad")
         exit(1)
     dataset_name = sys.argv[1].strip()
     teacher_model_name = sys.argv[2].strip()
     student_model_name = sys.argv[3].strip()
 
-    if len(sys.argv) == 5 and (sys.argv[4] == "-b" or sys.argv[4] == "--benchmark") :
-        benchmark_mode = True
+    epochs = 100
 
+    if len(sys.argv) == 5 and (sys.argv[4] == "-b" or sys.argv[4] == "--benchmark"):
+        benchmark_mode = True
+    else:
+        try:
+            epochs = int(sys.argv[4])
+        except ValueError:
+            print("Errore negli argomenti del programma!")
+            print(f"Uso corretto:\npython3 {sys.argv[0]} <categoria_dataset> <modello_teacher> <modello_student>\npython3 {sys.argv[0]} <categoria_dataset> <modello_teacher> <modello_student> --benchmark\npython3 {sys.argv[0]} <categoria_dataset> <modello_teacher> <modello_student> <n_epoche>\n")
+            exit(2)
 
     # SEED
     random.seed(SEED)
@@ -154,8 +162,8 @@ if __name__ == "__main__":
         transforms.ToTensor(),
         # transforms.RandomHorizontalFlip(),    # per textures
         # transforms.RandomVerticalFlip(),
-        transforms.ColorJitter(brightness=0.1, contrast=0.1),   # per le bottiglie porca miseria
-        transforms.RandomRotation(degrees=(0, 360)),    # sempre le dannate bottiglie
+        transforms.ColorJitter(brightness=0.1, contrast=0.1),
+        transforms.RandomRotation(degrees=(0, 360)),
         transforms.Normalize(mean=MEAN, std=STD)
     ])
 
@@ -190,11 +198,6 @@ if __name__ == "__main__":
 
     test_loader = DataLoader(dataset=data_test, batch_size=20, shuffle=False)
 
-    _,_,_ = anomaly_detection(dataset_name, teacher_model_name, student_model_name, train_loader, val_loader, test_loader, benchmark_mode)
+    _,_,_ = anomaly_detection(dataset_name, teacher_model_name, student_model_name, train_loader, val_loader, test_loader, benchmark_mode, max_epochs=epochs)
 
     exit(0)
-
-# TODO: testare tanti students e teachers diversi
-# TODO: numero di parametri -> sum(p.numel() for p in student.parameters() if p.requires_grad)
-# TODO: misurare tempo per inferenza
-# TODO: epoche dinamiche

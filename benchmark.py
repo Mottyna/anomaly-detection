@@ -14,7 +14,7 @@ def benchmark_epochs(teacher, student, train_loader, val_loader, test_loader, ma
     epoch_history = []
     cumulative_train_time = 0.0
 
-    print(f"\n--- Benchmark Epoche (da 0 a {max_epochs} epoche in steps di {delta_epochs}) ---")
+    print(f"\n--- Benchmark epoche (da 0 a {max_epochs} epoche in steps di {delta_epochs}) ---")
     for i in range(n_benchmarks):
         current_epoch = (i+1)*delta_epochs
 

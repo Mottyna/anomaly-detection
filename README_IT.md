@@ -28,7 +28,9 @@ Lo scopo del progetto era implementare e testare con vari modelli la tecnica di 
 ├── parameters.py           # Costanti, seed, iperparametri e pesi dei layer
 ├── benchmark.py            # Definizione della funzione `benchmark_epochs`, che addestra lo student fornendo dei checkpoints con risultati intermedi
 ├── run_benchmark.py        # Benchmark di tutte le reti come student e teacher, con checkpoints a diversi livelli di addestramento
+├── plot_results.py         # Genera grafici sui risultati del benchmark
 ├── risultati/              # [Generata automaticamente] Cartella contenente i plot di output del test
+├── grafici/                # [Generata automaticamente] Cartella contenente i plot di output del benchmark
 ├── mvtec/                  # Cartella che deve contenere i database mvtec sui quali si vuole testare il programma
 └── risultati_benchmark/    # [Generata automaticamente] Cartella contenente i risultati dei benchmark eseguiti
 ```

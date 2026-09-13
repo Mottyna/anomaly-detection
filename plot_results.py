@@ -106,18 +106,6 @@ def generate_benchmark_plots(results_dir=f"{RESULTS_DIR}", output_dir=PLOTS_DIR)
         plt.close()
 
 
-        # STABILITA' STUDENT
-        plt.figure(figsize=(10, 6))
-        sns.boxplot(data=df, x='Student', y='Best_Img_ROC_AUC', palette='Pastel1', showfliers=False, hue='Student', legend=False)
-        sns.swarmplot(data=df, x='Student', y='Best_Img_ROC_AUC', color=".25", size=8)
-        plt.title('Stabilità delle performance (image ROC AUC) per architettura student', fontsize=14, fontweight='bold', pad=15)
-        plt.xlabel('Architettura student', fontsize=12)
-        plt.ylabel('Image ROC AUC', fontsize=12)
-        plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, f"{topic.upper()}_5_student_stability.png"), dpi=300)
-        plt.close()
-
-
         # TEMPO DI ADDESTRAMENTO PER COPPIA
         plt.figure(figsize=(12, 7))
         df_temp = df.copy()
@@ -132,7 +120,7 @@ def generate_benchmark_plots(results_dir=f"{RESULTS_DIR}", output_dir=PLOTS_DIR)
         plt.savefig(os.path.join(output_dir, f"{topic.upper()}_6_time_comparison.png"), dpi=300)
         plt.close()
 
-        print(f"I 6 grafici relativi a {topic.upper()} sono stati generati e salvati con successo nella cartella '{output_dir}/'.\n")
+        print(f"I grafici relativi a {topic.upper()} sono stati generati e salvati con successo nella cartella '{output_dir}/'.\n")
 
 if __name__ == '__main__':
     generate_benchmark_plots()

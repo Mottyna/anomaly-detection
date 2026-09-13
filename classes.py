@@ -39,7 +39,8 @@ class Teacher:
 class ProjectorWrapper(nn.Module):
     def __init__(self, extractor, student_channels, teacher_channels):
         """
-        proietta le feature dello student per allinearle ai canali del teacher.
+        proietta le feature dello student per allinearle ai canali del teacher
+        tramite convoluzioni 1*1.
         """
         super().__init__()
         self.extractor = extractor
@@ -80,6 +81,7 @@ class ResidualBlock(nn.Module):
 
 class Bottleneck(nn.Module):
     """
+    modulo che prende in input tre mappe di feature e le unisce in una oce.
     """
     def __init__(self, teacher_channels):
         super().__init__()

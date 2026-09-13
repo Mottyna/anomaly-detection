@@ -117,12 +117,12 @@ class MVTEC(VisionDataset):
                     self.targets.append(label)
 
                     if label == 1:
-                        # Le immagini 'good' non hanno difetti, quindi creiamo una maschera tutta nera (zeri)
+                        # le immagini 'good' non hanno difetti, quindi creiamo una maschera tutta nera (zeri)
                         h, w = img.shape[0], img.shape[1]
                         mask = np.zeros((h, w), dtype=np.uint8)
                         self.masks.append(mask)
                     else:
-                        # Le immagini difettose hanno la maschera in ground_truth/nome_difetto/nome_file_mask.png
+                        # le immagini difettose hanno la maschera in ground_truth/nome_difetto/nome_file_mask.png
                         base_name, _ = os.path.splitext(file.name)
                         mask_name = f"{base_name}_mask.png"
                         mask_path = os.path.join(gtFolder, subfolder, mask_name)
@@ -132,7 +132,7 @@ class MVTEC(VisionDataset):
                             if mask.max() <= 1.0:
                                 mask = mask * 255
                             mask = mask.astype(np.uint8)
-                            # Se la maschera è salvata a 3 canali (RGB), prendiamo solo il primo canale (monocromatico)
+                            # se la maschera è salvata a 3 canali (RGB), prendiamo solo il primo canale (monocromatico)
                             if len(mask.shape) == 3:
                                 mask = mask[:, :, 0]
                             self.masks.append(mask)
@@ -185,7 +185,7 @@ class MVTEC(VisionDataset):
             mask = self.masks[index]
             mask = Image.fromarray(mask)
             if self.resize:
-                # Usiamo NEAREST interpolation per evitare bordi sfumati/grigi sulla maschera binaria
+                # NEAREST interpolation per evitare bordi sfumati/grigi sulla maschera binaria
                 resizeMask = transforms.Resize(self.resize, interpolation=transforms.InterpolationMode.NEAREST)
                 mask = resizeMask(mask)
             
