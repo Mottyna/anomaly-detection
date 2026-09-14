@@ -126,6 +126,23 @@ The evaluation metrics will be printed to the terminal at each training checkpoi
 ### Benchmark (`run_benchmark.py`)
 In the `risultati_benchmark` (benchmark results) folder, a `.csv` file containing the best results obtained by each tested teacher-student pair and other metrics, alongside a `.json` file documenting the training progress, will be saved.
 
+## Results
+Anomaly sample from `resnet50->resnet18` on dataset bottle:
+
+
+<img width="1808" height="574" alt="Image" src="https://github.com/user-attachments/assets/789a3b27-1886-4d07-b23f-6023ca8fb642" />
+
+
+Anomaly sample from `wideresnet50->rd4ad` on dataset hazelnut:
+
+
+<img width="1808" height="574" alt="Image" src="https://github.com/user-attachments/assets/67be12c4-bdc7-40a8-b1bd-0ecbd885ff96" />
+
+
+FPS/F1-score comparison on dataset leather:
+
+<img width="3000" height="1800" alt="Image" src="https://github.com/user-attachments/assets/3402b7e6-7fa7-4b0d-a318-861ec96b0d37" />
+
 ## Credits 🙏
 This project includes and adapts third-party open-source code:
 

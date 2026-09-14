@@ -134,6 +134,23 @@ Sul terminale verrano stampate le metriche di valutazione a ogni checkpoint dell
 ### Benchmark (`run_benchmark.py`)
 Nella cartella `risultati_benchmark` verranno salvati un file `.csv` contenente i migliori risultati ottenuti da ogni coppia teacher-student testata e altre metriche, e un file `.json` che registra l'andamento dell'addestramento.
 
+## Risultati
+Anomaly sample di `resnet50->resnet18` su dataset bottle:
+
+
+<img width="1808" height="574" alt="Image" src="https://github.com/user-attachments/assets/789a3b27-1886-4d07-b23f-6023ca8fb642" />
+
+
+Anomaly sample di `wideresnet50->rd4ad` su dataset hazelnut:
+
+
+<img width="1808" height="574" alt="Image" src="https://github.com/user-attachments/assets/67be12c4-bdc7-40a8-b1bd-0ecbd885ff96" />
+
+
+FPS/F1-score su dataset leather:
+
+<img width="3000" height="1800" alt="Image" src="https://github.com/user-attachments/assets/3402b7e6-7fa7-4b0d-a318-861ec96b0d37" />
+
 ## Crediti
 Questo progetto include e adatta codice open-source di terze parti:
 
